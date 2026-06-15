@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>キャラとばなし</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@400;700&display=swap');
+
+  :root {
+    --bg: #fdf6fb;
+    --surface: #ffffff;
+    --surface2: #fdeef8;
+    --border: #f0c9e8;
+    --accent: #e879b8;
+    --accent2: #f4a7d6;
+    --accent-dim: rgba(232,121,184,0.12);
+    --text: #3d2040;
+    --text-muted: #b07aab;
+    --bubble-user: #e879b8;
+    --bubble-chara: #fdeef8;
+    --danger: #f87171;
+    --green: #6ee7b7;
+    --font-body: 'Noto Sans JP', sans-serif;
+    --font-serif: 'Noto Serif JP', serif;
+    --radius: 16px;
+    --radius-sm: 8px;
+    --candy1: #ffb3d9;
+    --candy2: #c8b4fa;
+    --candy3: #ffd6f0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== SCREENS ===== */
+  .screen { display: none; flex-direction: column; height: 100dvh; }
+  .screen.active { display: flex; }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar h1 { font-size: 18px; font-weight: 700; letter-spacing: 0.05em; }
+  .topbar .subtitle { font-size: 12px; color: var(--text-muted); }
+  .topbar-logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--candy1), var(--candy2));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(232,121,184,0.3);
+  }
+  .topbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    border: none; cursor: pointer; border-radius: var(--radius-sm);
+    font-family: var(--font-body); font-size: 14px; font-weight: 500;
+    padding: 10px 18px; transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent); color: #0f0e17;
+  }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-ghost {
+    background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: white; }
+  .btn-icon {
+    background: transparent; border: none; cursor: pointer;
+    color: var(--text-muted); width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%; font-size: 18px; transition: all 0.15s;
+  }
+  .btn-icon:hover { background: var(--surface2); color: var(--text); }
+
+  /* ===== CHARA LIST SCREEN ===== */
+  #screen-list .content {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .chara-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+    cursor: pointer; transition: all 0.15s;
+    position: relative;
+  }
+  .chara-card:hover { border-color: var(--accent); background: var(--surface2); }
+  .chara-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    object-fit: cover; flex-shrink: 0;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; border: 2px solid var(--border);
+  }
+  .chara-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+  .chara-info { flex: 1; min-width: 0; }
+  .chara-name { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .chara-preview { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chara-actions {
+    display: flex; gap: 6px; flex-shrink: 0;
+  }
+  .empty-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+    color: var(--text-muted); text-align: center; padding: 40px;
+  }
+  .empty-icon { font-size: 48px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; line-height: 1.8; }
+
+  /* ===== CHARA FORM SCREEN ===== */
+  #screen-form .content {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .form-section { display: flex; flex-direction: column; gap: 8px; }
+  .form-label { font-size: 12px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.05em; }
+  .form-input, .form-textarea, .form-select {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: var(--font-body); font-size: 14px; padding: 12px 14px;
+    outline: none; transition: border-color 0.15s; width: 100%;
+  }
+  .form-input:focus, .form-textarea:focus, .form-select:focus {
+    border-color: var(--accent);
+  }
+  .form-textarea { resize: vertical; min-height: 100px; line-height: 1.7; }
+  .form-select option { background: var(--surface2); }
+  .avatar-picker {
+    display: flex; align-items: center; gap: 16px;
+  }
+  .avatar-preview {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: var(--surface2); border: 2px dashed var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; cursor: pointer; flex-shrink: 0;
+    overflow: hidden; transition: border-color 0.15s;
+  }
+  .avatar-preview:hover { border-color: var(--accent); }
+  .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-hint { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+  .wallpaper-picker {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .wallpaper-preview {
+    width: 100%; height: 80px; border-radius: var(--radius-sm);
+    background: var(--surface2); border: 2px dashed var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--text-muted); cursor: pointer;
+    overflow: hidden; transition: border-color 0.15s;
+  }
+  .wallpaper-preview:hover { border-color: var(--accent); }
+  .wallpaper-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .form-actions {
+    display: flex; gap: 10px; padding: 16px 20px;
+    background: var(--surface); border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .form-actions .btn { flex: 1; }
+  .hint-text { font-size: 11px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ===== MODE SELECT SCREEN ===== */
+  #screen-mode { align-items: stretch; }
+  #screen-mode .topbar .chara-name-display {
+    font-size: 16px; font-weight: 700;
+  }
+  #screen-mode .content {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px; padding: 30px 20px;
+    background-image: var(--wallpaper-url, none);
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  #screen-mode .content::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(253,246,251,0.55); backdrop-filter: blur(2px);
+  }
+  .mode-avatar-large {
+    width: 100px; height: 100px; border-radius: 50%;
+    border: 3px solid var(--accent);
+    object-fit: cover; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; position: relative; z-index: 1;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .mode-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+  .mode-chara-name {
+    font-size: 22px; font-weight: 700;
+    position: relative; z-index: 1;
+    color: var(--text);
+    text-shadow: 0 1px 4px rgba(255,255,255,0.8);
+  }
+  .mode-cards {
+    display: flex; flex-direction: column; gap: 14px;
+    width: 100%; max-width: 360px; position: relative; z-index: 1;
+  }
+  .mode-card {
+    background: rgba(255,255,255,0.94);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px; cursor: pointer; transition: all 0.18s;
+    box-shadow: 0 2px 12px rgba(232,121,184,0.1);
+  }
+  .mode-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,121,184,0.2); }
+  .mode-card-icon { font-size: 28px; margin-bottom: 8px; }
+  .mode-card-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .mode-card-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ===== CHAT SCREEN ===== */
+  #screen-chat {
+    background-image: var(--wallpaper-url, none);
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  #screen-chat::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(253,246,251,0.5);
+    pointer-events: none; z-index: 0;
+  }
+  #screen-chat .topbar,
+  #screen-chat .chat-input-area { position: relative; z-index: 1; }
+  .chat-topbar-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface2); display: flex; align-items: center; justify-content: center;
+    font-size: 18px; overflow: hidden; flex-shrink: 0;
+  }
+  .chat-topbar-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    position: relative; z-index: 1;
+  }
+  .msg {
+    display: flex; flex-direction: column; max-width: 78%;
+  }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.chara { align-self: flex-start; align-items: flex-start; }
+  .msg-bubble {
+    padding: 10px 14px; border-radius: 18px;
+    font-size: 14px; line-height: 1.7; word-break: break-word;
+  }
+  .msg.user .msg-bubble {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.chara .msg-bubble {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+    color: var(--text);
+    box-shadow: 0 2px 8px rgba(232,121,184,0.08);
+  }
+  .msg-time {
+    font-size: 10px; color: var(--text-muted); margin-top: 3px; padding: 0 4px;
+  }
+  .typing-indicator {
+    display: flex; gap: 4px; padding: 12px 16px;
+    background: #ffffff; border-radius: 18px;
+    border-bottom-left-radius: 4px; border: 1px solid var(--border);
+    width: fit-content; box-shadow: 0 2px 8px rgba(232,121,184,0.08);
+  }
+  .typing-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-muted); animation: typingDot 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingDot {
+    0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+    30% { opacity: 1; transform: translateY(-4px); }
+  }
+  .chat-input-area {
+    display: flex; align-items: flex-end; gap: 10px;
+    padding: 12px 16px; background: rgba(255,255,255,0.95);
+    border-top: 1px solid var(--border);
+  }
+  .chat-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 22px; color: var(--text); font-family: var(--font-body);
+    font-size: 14px; padding: 10px 16px; outline: none; resize: none;
+    max-height: 120px; line-height: 1.5; transition: border-color 0.15s;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-send-btn {
+    width: 40px; height: 40px; border-radius: 50%; border: none;
+    background: linear-gradient(135deg, var(--accent), var(--candy2));
+    color: #fff; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0; transition: all 0.15s;
+    box-shadow: 0 2px 8px rgba(232,121,184,0.4);
+  }
+  .chat-send-btn:hover { opacity: 0.85; transform: scale(1.05); }
+  .chat-send-btn:disabled { background: var(--border); cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* ===== STORY SCREEN ===== */
+  #screen-story {
+    background-image: var(--wallpaper-url, none);
+    background-size: cover; background-position: center;
+    position: relative;
+  }
+  #screen-story::before {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(253,246,251,0.6);
+    pointer-events: none; z-index: 0;
+  }
+  #screen-story .topbar,
+  #screen-story .story-input-area { position: relative; z-index: 1; }
+  .story-content {
+    flex: 1; overflow-y: auto; padding: 20px;
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; gap: 24px;
+  }
+  .story-block { display: flex; flex-direction: column; gap: 12px; }
+  .story-user-line {
+    align-self: flex-end;
+    background: rgba(76,61,143,0.85);
+    padding: 8px 16px; border-radius: 20px;
+    font-size: 14px; backdrop-filter: blur(6px);
+    max-width: 80%; border: 1px solid rgba(167,139,250,0.3);
+  }
+  .story-chara-text {
+    font-family: var(--font-serif);
+    font-size: 15px; line-height: 2.1;
+    color: var(--text);
+    background: rgba(255,255,255,0.92);
+    padding: 20px 24px;
+    border-radius: var(--radius);
+    border-left: 3px solid var(--accent);
+    box-shadow: 0 2px 12px rgba(232,121,184,0.1);
+  }
+  .story-chara-text .dialogue {
+    color: var(--accent); font-weight: 600;
+  }
+  .story-chara-text .internal {
+    color: var(--text-muted); font-style: italic; font-size: 13px;
+  }
+  .story-input-area {
+    padding: 16px; background: rgba(255,255,255,0.97);
+    border-top: 1px solid var(--border);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .story-label {
+    font-size: 11px; color: var(--text-muted); letter-spacing: 0.05em;
+  }
+  .story-input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-family: var(--font-body); font-size: 14px;
+    padding: 12px 14px; outline: none; resize: none;
+    max-height: 80px; line-height: 1.6; transition: border-color 0.15s; width: 100%;
+  }
+  .story-input:focus { border-color: var(--accent); }
+  .story-actions { display: flex; gap: 8px; }
+  .story-actions .btn { padding: 8px 16px; font-size: 13px; }
+
+  /* ===== WORLD SETTING MODAL ===== */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 100;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px;
+    width: 100%; max-width: 440px; max-height: 90dvh; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .modal-title { font-size: 17px; font-weight: 700; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { flex: 1; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); padding: 10px 20px; border-radius: 20px;
+    font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.3s;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== APIキー設定バナー ===== */
+  .apikey-banner {
+    background: linear-gradient(135deg, #fff0f9, #f3eeff);
+    border: 1.5px solid var(--candy1);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin: 16px 20px 0;
+    display: flex; flex-direction: column; gap: 10px;
+    box-shadow: 0 2px 12px rgba(232,121,184,0.1);
+  }
+  .apikey-banner-title {
+    font-size: 14px; font-weight: 700; color: var(--accent);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .apikey-banner p { font-size: 12px; color: var(--text-muted); line-height: 1.7; }
+  .apikey-input-row { display: flex; gap: 8px; }
+  .apikey-input-row .form-input { flex: 1; font-size: 13px; padding: 9px 12px; }
+  .apikey-input-row .btn { padding: 9px 14px; font-size: 13px; white-space: nowrap; }
+  .apikey-set-indicator {
+    font-size: 12px; color: #16a34a; font-weight: 500;
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--candy1); border-radius: 4px; }
+
+  /* ===== STORY LOADING ===== */
+  .story-loading {
+    font-family: var(--font-serif);
+    font-size: 14px; color: var(--text-muted);
+    padding: 20px 24px; text-align: center; letter-spacing: 0.1em;
+  }
+  .story-loading-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+  }
+  @keyframes dots {
+    0% { content: ''; }
+    33% { content: '・'; }
+    66% { content: '・・'; }
+    100% { content: '・・・'; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== キャラ一覧 ===== -->
+<div id="screen-list" class="screen active">
+  <div class="topbar">
+    <div class="topbar-logo">🍬</div>
+    <div>
+      <div style="font-size:17px;font-weight:700;">キャラとばなし</div>
+      <div class="subtitle">登録キャラクター</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-primary" onclick="showFormScreen()">＋ 追加</button>
+    </div>
+  </div>
+  <!-- APIキーバナー -->
+  <div class="apikey-banner" id="apikey-banner">
+    <div class="apikey-banner-title">🔑 APIキーを設定してください</div>
+    <p>チャットとストーリー機能を使うには、Anthropic APIキーが必要です。<br>キーは<b>このブラウザにのみ保存</b>され、外部に送信されません。</p>
+    <div class="apikey-input-row">
+      <input type="password" class="form-input" id="apikey-input" placeholder="sk-ant-..." autocomplete="off">
+      <button class="btn btn-primary" onclick="saveApiKey()">保存</button>
+    </div>
+    <p>APIキーは <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--accent)">console.anthropic.com</a> で取得できます。</p>
+  </div>
+  <div class="content" id="chara-list-content">
+    <!-- JSで描画 -->
+  </div>
+</div>
+
+<!-- ===== キャラ登録フォーム ===== -->
+<div id="screen-form" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showListScreen()">←</button>
+    <div>
+      <div id="form-title" style="font-size:17px;font-weight:700;">キャラクターを登録</div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="form-section">
+      <div class="form-label">アイコン画像</div>
+      <div class="avatar-picker">
+        <div class="avatar-preview" onclick="document.getElementById('avatar-input').click()" id="avatar-preview-el">
+          <span id="avatar-emoji">🌟</span>
+        </div>
+        <div class="avatar-hint">タップして画像を選択<br>（JPG・PNG・GIF対応）<br>選ばない場合は絵文字で表示されます</div>
+      </div>
+      <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="handleAvatarChange(this)">
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">壁紙画像（チャット背景）</div>
+      <div class="wallpaper-picker">
+        <div class="wallpaper-preview" onclick="document.getElementById('wallpaper-input').click()" id="wallpaper-preview-el">
+          <span>＋ 壁紙を選ぶ</span>
+        </div>
+        <input type="file" id="wallpaper-input" accept="image/*" style="display:none" onchange="handleWallpaperChange(this)">
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">キャラクター名 *</div>
+      <input type="text" class="form-input" id="form-name" placeholder="例：あおば">
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">一人称</div>
+      <input type="text" class="form-input" id="form-pronoun" placeholder="例：僕、俺、わたし、私">
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">口調・話し方</div>
+      <input type="text" class="form-input" id="form-tone" placeholder="例：落ち着いた口調。ぶっきらぼうだが優しい">
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">性格・特徴</div>
+      <textarea class="form-textarea" id="form-personality" placeholder="例：冷静で観察眼が鋭い。感情を表に出さないが、実は誰よりも相手のことを気にかけている。"></textarea>
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">背景・設定（任意）</div>
+      <textarea class="form-textarea" id="form-background" placeholder="例：退役した東北新幹線の擬人化。現役時代は多くの人を運んだが今は静かに過ごしている。"></textarea>
+      <div class="hint-text">細かく書くほどキャラらしい返答になります</div>
+    </div>
+
+    <div class="form-section">
+      <div class="form-label">ユーザーへの呼び方</div>
+      <input type="text" class="form-input" id="form-callname" placeholder="例：ゆき、あなた、おまえ">
+    </div>
+  </div>
+  <div class="form-actions">
+    <button class="btn btn-ghost" onclick="showListScreen()">キャンセル</button>
+    <button class="btn btn-primary" onclick="saveChara()">保存する</button>
+  </div>
+</div>
+
+<!-- ===== モード選択 ===== -->
+<div id="screen-mode" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showListScreen()">←</button>
+    <div>
+      <div class="chara-name-display" id="mode-chara-name">キャラクター名</div>
+      <div class="subtitle">モードを選んでください</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" onclick="editCurrentChara()" title="編集">✏️</button>
+    </div>
+  </div>
+  <div class="content" id="mode-content">
+    <div class="mode-avatar-large" id="mode-avatar">
+      <span id="mode-avatar-emoji">🌟</span>
+    </div>
+    <div class="mode-chara-name" id="mode-chara-name2"></div>
+    <div class="mode-cards">
+      <div class="mode-card" onclick="startChatMode()">
+        <div class="mode-card-icon">💬</div>
+        <div class="mode-card-title">チャットモード</div>
+        <div class="mode-card-desc">LINEのようなリアルタイムのやり取り。日常会話を楽しむ</div>
+      </div>
+      <div class="mode-card" onclick="showWorldModal()">
+        <div class="mode-card-icon">📖</div>
+        <div class="mode-card-title">ストーリーモード</div>
+        <div class="mode-card-desc">世界観を設定して、あなたの台詞に応じた小説・ノベルゲーム風の文章が展開される</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== チャット ===== -->
+<div id="screen-chat" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showModeScreen()">←</button>
+    <div class="chat-topbar-avatar" id="chat-topbar-avatar">
+      <span id="chat-topbar-emoji">🌟</span>
+    </div>
+    <div>
+      <div style="font-size:16px;font-weight:700;" id="chat-chara-name">名前</div>
+      <div class="subtitle">チャットモード</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" onclick="clearChatHistory()" title="履歴を消す">🗑️</button>
+    </div>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-area">
+    <textarea class="chat-input" id="chat-input" placeholder="メッセージを入力…" rows="1"
+      onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="chat-send-btn" id="chat-send-btn" onclick="sendChatMessage()">➤</button>
+  </div>
+</div>
+
+<!-- ===== ストーリー ===== -->
+<div id="screen-story" class="screen">
+  <div class="topbar">
+    <button class="btn-icon" onclick="showModeScreen()">←</button>
+    <div class="chat-topbar-avatar" id="story-topbar-avatar">
+      <span id="story-topbar-emoji">🌟</span>
+    </div>
+    <div>
+      <div style="font-size:16px;font-weight:700;" id="story-chara-name">名前</div>
+      <div class="subtitle">ストーリーモード</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" onclick="showWorldModal()" title="世界観を変更">🌐</button>
+      <button class="btn-icon" onclick="clearStoryHistory()" title="リセット">🗑️</button>
+    </div>
+  </div>
+  <div class="story-content" id="story-content"></div>
+  <div class="story-input-area">
+    <div class="story-label">ゆきの台詞・行動を入力</div>
+    <textarea class="story-input" id="story-input" placeholder='例：「……ただいま」' rows="2"
+      onkeydown="handleStoryKey(event)"></textarea>
+    <div class="story-actions">
+      <button class="btn btn-ghost" onclick="showWorldModal()">🌐 世界観</button>
+      <button class="btn btn-primary" id="story-send-btn" onclick="sendStoryMessage()">続きを書く →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 世界観設定モーダル ===== -->
+<div class="modal-overlay" id="world-modal">
+  <div class="modal">
+    <div class="modal-title">🌐 世界観・舞台を設定</div>
+    <div class="form-section">
+      <div class="form-label">時代・場所・世界の設定</div>
+      <textarea class="form-textarea" id="world-setting" placeholder="例：現代日本。二人は同じアパートで同居している。ゆきは会社員、あおばは無職で家事を担当している。"></textarea>
+    </div>
+    <div class="form-section">
+      <div class="form-label">ふたりの関係性</div>
+      <input type="text" class="form-input" id="world-relation" placeholder="例：同居人、恋人、幼馴染、師弟">
+    </div>
+    <div class="form-section">
+      <div class="form-label">雰囲気・ジャンル</div>
+      <select class="form-select" id="world-genre">
+        <option value="日常">日常・ほっこり</option>
+        <option value="恋愛">恋愛・甘め</option>
+        <option value="ドラマ">ドラマ・感動</option>
+        <option value="ファンタジー">ファンタジー・異世界</option>
+        <option value="ミステリー">ミステリー・サスペンス</option>
+        <option value="SF">SF・近未来</option>
+        <option value="歴史">歴史・時代劇</option>
+      </select>
+    </div>
+    <div class="form-section">
+      <div class="form-label">現在のシーン（冒頭の状況）</div>
+      <textarea class="form-textarea" id="world-scene" style="min-height:70px"
+        placeholder="例：夜遅く、ゆきが仕事から帰宅したところ。あおばは電気もつけずにソファに座っていた。"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeWorldModal()">キャンセル</button>
+      <button class="btn btn-primary" onclick="startStoryMode()">ストーリーを始める</button>
+    </div>
+  </div>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== データ管理 =====
+const STORAGE_KEY = 'chara_chat_data';
+const CHAT_KEY = 'chara_chat_messages_';
+const STORY_KEY = 'chara_story_messages_';
+
+let charas = [];
+let currentCharaId = null;
+let currentWorldSetting = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) charas = JSON.parse(raw);
+  } catch(e) { charas = []; }
+}
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(charas));
+}
+
+function getChatHistory(charaId) {
+  try {
+    const raw = localStorage.getItem(CHAT_KEY + charaId);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveChatHistory(charaId, history) {
+  localStorage.setItem(CHAT_KEY + charaId, JSON.stringify(history));
+}
+
+function getStoryHistory(charaId) {
+  try {
+    const raw = localStorage.getItem(STORY_KEY + charaId);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveStoryHistory(charaId, history) {
+  localStorage.setItem(STORY_KEY + charaId, JSON.stringify(history));
+}
+
+// ===== 画面遷移 =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function showListScreen() {
+  showScreen('list');
+  renderCharaList();
+}
+
+let editingCharaId = null;
+let pendingAvatarData = null;
+let pendingWallpaperData = null;
+
+function showFormScreen(charaId = null) {
+  editingCharaId = charaId;
+  pendingAvatarData = null;
+  pendingWallpaperData = null;
+
+  document.getElementById('form-title').textContent = charaId ? 'キャラクターを編集' : 'キャラクターを登録';
+
+  const fields = ['name','pronoun','tone','personality','background','callname'];
+  fields.forEach(f => document.getElementById('form-' + f).value = '');
+
+  // アバタープレビューリセット
+  const avPrev = document.getElementById('avatar-preview-el');
+  avPrev.innerHTML = '<span id="avatar-emoji">🌟</span>';
+
+  // 壁紙プレビューリセット
+  const wpPrev = document.getElementById('wallpaper-preview-el');
+  wpPrev.innerHTML = '<span>＋ 壁紙を選ぶ</span>';
+
+  if (charaId) {
+    const chara = charas.find(c => c.id === charaId);
+    if (chara) {
+      document.getElementById('form-name').value = chara.name || '';
+      document.getElementById('form-pronoun').value = chara.pronoun || '';
+      document.getElementById('form-tone').value = chara.tone || '';
+      document.getElementById('form-personality').value = chara.personality || '';
+      document.getElementById('form-background').value = chara.background || '';
+      document.getElementById('form-callname').value = chara.callname || '';
+
+      if (chara.avatar) {
+        avPrev.innerHTML = `<img src="${chara.avatar}">`;
+        pendingAvatarData = chara.avatar;
+      }
+      if (chara.wallpaper) {
+        wpPrev.innerHTML = `<img src="${chara.wallpaper}">`;
+        pendingWallpaperData = chara.wallpaper;
+      }
+    }
+  }
+
+  showScreen('form');
+}
+
+function showModeScreen() {
+  const chara = charas.find(c => c.id === currentCharaId);
+  if (!chara) { showListScreen(); return; }
+
+  document.getElementById('mode-chara-name').textContent = chara.name;
+  document.getElementById('mode-chara-name2').textContent = chara.name;
+
+  const modeAvatar = document.getElementById('mode-avatar');
+  if (chara.avatar) {
+    modeAvatar.innerHTML = `<img src="${chara.avatar}">`;
+  } else {
+    modeAvatar.innerHTML = `<span id="mode-avatar-emoji">🌟</span>`;
+  }
+
+  const modeContent = document.getElementById('mode-content');
+  if (chara.wallpaper) {
+    document.getElementById('screen-mode').style.setProperty('--wallpaper-url', `url("${chara.wallpaper}")`);
+    modeContent.style.setProperty('--wallpaper-url', `url("${chara.wallpaper}")`);
+  } else {
+    document.getElementById('screen-mode').style.removeProperty('--wallpaper-url');
+    modeContent.style.removeProperty('--wallpaper-url');
+  }
+
+  showScreen('mode');
+}
+
+function editCurrentChara() {
+  showFormScreen(currentCharaId);
+}
+
+// ===== キャラ一覧描画 =====
+function renderCharaList() {
+  const container = document.getElementById('chara-list-content');
+  if (charas.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">✦</div>
+        <p>まだキャラクターが登録されていません。<br>「＋ 追加」から最初のキャラを登録しましょう。</p>
+      </div>`;
+    return;
+  }
+  container.innerHTML = charas.map(c => `
+    <div class="chara-card" onclick="selectChara('${c.id}')">
+      <div class="chara-avatar">
+        ${c.avatar ? `<img src="${c.avatar}">` : '🌟'}
+      </div>
+      <div class="chara-info">
+        <div class="chara-name">${escHtml(c.name)}</div>
+        <div class="chara-preview">${escHtml(c.personality ? c.personality.slice(0,40) + '…' : '性格未設定')}</div>
+      </div>
+      <div class="chara-actions" onclick="event.stopPropagation()">
+        <button class="btn-icon" onclick="showFormScreen('${c.id}')" title="編集">✏️</button>
+        <button class="btn-icon" onclick="deleteChara('${c.id}')" title="削除" style="color:var(--danger)">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectChara(id) {
+  currentCharaId = id;
+  showModeScreen();
+}
+
+// ===== フォーム処理 =====
+function handleAvatarChange(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingAvatarData = e.target.result;
+    document.getElementById('avatar-preview-el').innerHTML = `<img src="${pendingAvatarData}">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function handleWallpaperChange(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    pendingWallpaperData = e.target.result;
+    document.getElementById('wallpaper-preview-el').innerHTML = `<img src="${pendingWallpaperData}">`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function saveChara() {
+  const name = document.getElementById('form-name').value.trim();
+  if (!name) { showToast('キャラクター名を入力してください'); return; }
+
+  if (editingCharaId) {
+    const idx = charas.findIndex(c => c.id === editingCharaId);
+    if (idx !== -1) {
+      charas[idx] = {
+        ...charas[idx],
+        name,
+        pronoun: document.getElementById('form-pronoun').value.trim(),
+        tone: document.getElementById('form-tone').value.trim(),
+        personality: document.getElementById('form-personality').value.trim(),
+        background: document.getElementById('form-background').value.trim(),
+        callname: document.getElementById('form-callname').value.trim(),
+        avatar: pendingAvatarData || charas[idx].avatar || null,
+        wallpaper: pendingWallpaperData || charas[idx].wallpaper || null,
+      };
+    }
+    showToast('保存しました');
+  } else {
+    const newChara = {
+      id: Date.now().toString(),
+      name,
+      pronoun: document.getElementById('form-pronoun').value.trim(),
+      tone: document.getElementById('form-tone').value.trim(),
+      personality: document.getElementById('form-personality').value.trim(),
+      background: document.getElementById('form-background').value.trim(),
+      callname: document.getElementById('form-callname').value.trim(),
+      avatar: pendingAvatarData || null,
+      wallpaper: pendingWallpaperData || null,
+    };
+    charas.push(newChara);
+    showToast('登録しました');
+  }
+
+  saveData();
+  showListScreen();
+}
+
+function deleteChara(id) {
+  if (!confirm('このキャラクターを削除しますか？')) return;
+  charas = charas.filter(c => c.id !== id);
+  localStorage.removeItem(CHAT_KEY + id);
+  localStorage.removeItem(STORY_KEY + id);
+  saveData();
+  renderCharaList();
+}
+
+// ===== チャットモード =====
+function startChatMode() {
+  const chara = charas.find(c => c.id === currentCharaId);
+  if (!chara) return;
+
+  document.getElementById('chat-chara-name').textContent = chara.name;
+  const avEl = document.getElementById('chat-topbar-avatar');
+  if (chara.avatar) {
+    avEl.innerHTML = `<img src="${chara.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+  } else {
+    avEl.innerHTML = `<span id="chat-topbar-emoji">🌟</span>`;
+  }
+
+  const chatScreen = document.getElementById('screen-chat');
+  if (chara.wallpaper) {
+    chatScreen.style.setProperty('--wallpaper-url', `url("${chara.wallpaper}")`);
+  } else {
+    chatScreen.style.removeProperty('--wallpaper-url');
+  }
+
+  renderChatMessages();
+  showScreen('chat');
+  document.getElementById('chat-input').focus();
+}
+
+function renderChatMessages() {
+  const history = getChatHistory(currentCharaId);
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = history.map(m => createMsgHTML(m.role, m.content, m.time)).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function createMsgHTML(role, content, time) {
+  const timeStr = time ? new Date(time).toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}) : '';
+  return `<div class="msg ${role}">
+    <div class="msg-bubble">${escHtml(content).replace(/\n/g,'<br>')}</div>
+    <div class="msg-time">${timeStr}</div>
+  </div>`;
+}
+
+function addChatMsg(role, content) {
+  const container = document.getElementById('chat-messages');
+  const now = Date.now();
+  container.insertAdjacentHTML('beforeend', createMsgHTML(role, content, now));
+  container.scrollTop = container.scrollHeight;
+
+  const history = getChatHistory(currentCharaId);
+  history.push({ role, content, time: now });
+  saveChatHistory(currentCharaId, history);
+}
+
+let isChatLoading = false;
+
+async function sendChatMessage() {
+  if (isChatLoading) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  autoResize(input);
+  addChatMsg('user', text);
+  isChatLoading = true;
+  document.getElementById('chat-send-btn').disabled = true;
+
+  const typingEl = document.createElement('div');
+  typingEl.className = 'msg chara';
+  typingEl.innerHTML = `<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  const msgContainer = document.getElementById('chat-messages');
+  msgContainer.appendChild(typingEl);
+  msgContainer.scrollTop = msgContainer.scrollHeight;
+
+  const chara = charas.find(c => c.id === currentCharaId);
+  const history = getChatHistory(currentCharaId);
+  const apiMessages = buildChatApiMessages(chara, history, text);
+
+  try {
+    const reply = await callClaudeAPI(apiMessages, 'chat');
+    msgContainer.removeChild(typingEl);
+    addChatMsg('chara', reply);
+  } catch(e) {
+    msgContainer.removeChild(typingEl);
+    addChatMsg('chara', '（通信エラーが発生しました。APIキーの設定をご確認ください）');
+  }
+
+  isChatLoading = false;
+  document.getElementById('chat-send-btn').disabled = false;
+}
+
+function buildChatApiMessages(chara, history, newText) {
+  const systemPrompt = buildCharaSystemPrompt(chara, 'chat');
+  const msgs = [{ role: 'user', content: systemPrompt }];
+
+  // 会話履歴（最新20件）
+  const recent = history.slice(-20);
+  for (const m of recent) {
+    msgs.push({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content });
+  }
+
+  return msgs;
+}
+
+function buildCharaSystemPrompt(chara, mode) {
+  const pronoun = chara.pronoun || '私';
+  const callname = chara.callname || 'あなた';
+  const tone = chara.tone || '自然な話し方';
+  const personality = chara.personality || '';
+  const background = chara.background || '';
+  const name = chara.name;
+
+  if (mode === 'chat') {
+    return `あなたは「${name}」というキャラクターです。以下の設定に従って会話してください。
+
+【基本情報】
+- 名前：${name}
+- 一人称：${pronoun}
+- ユーザーへの呼び方：${callname}
+- 口調・話し方：${tone}
+- 性格・特徴：${personality}
+${background ? `- 背景・設定：${background}` : ''}
+
+【ルール】
+- 常に${name}として一人称${pronoun}で話す
+- ${callname}と呼びかける
+- LINEのような自然な会話を心がける
+- 短〜中程度の返答（1〜4文程度）
+- キャラクターの性格を一貫して維持する
+- 絵文字は性格に合わせて使用（クールなキャラなら使わない等）`;
+  }
+  return '';
+}
+
+function handleChatKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendChatMessage();
+  }
+}
+
+function clearChatHistory() {
+  if (!confirm('チャット履歴を削除しますか？')) return;
+  saveChatHistory(currentCharaId, []);
+  renderChatMessages();
+}
+
+// ===== ストーリーモード =====
+function showWorldModal() {
+  if (currentWorldSetting) {
+    document.getElementById('world-setting').value = currentWorldSetting.setting || '';
+    document.getElementById('world-relation').value = currentWorldSetting.relation || '';
+    document.getElementById('world-genre').value = currentWorldSetting.genre || '日常';
+    document.getElementById('world-scene').value = currentWorldSetting.scene || '';
+  }
+  document.getElementById('world-modal').classList.add('active');
+}
+
+function closeWorldModal() {
+  document.getElementById('world-modal').classList.remove('active');
+}
+
+function startStoryMode() {
+  const setting = document.getElementById('world-setting').value.trim();
+  const relation = document.getElementById('world-relation').value.trim();
+  const genre = document.getElementById('world-genre').value;
+  const scene = document.getElementById('world-scene').value.trim();
+
+  currentWorldSetting = { setting, relation, genre, scene };
+  closeWorldModal();
+
+  const chara = charas.find(c => c.id === currentCharaId);
+  if (!chara) return;
+
+  document.getElementById('story-chara-name').textContent = chara.name;
+  const avEl = document.getElementById('story-topbar-avatar');
+  if (chara.avatar) {
+    avEl.innerHTML = `<img src="${chara.avatar}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+  } else {
+    avEl.innerHTML = `<span>🌟</span>`;
+  }
+
+  const storyScreen = document.getElementById('screen-story');
+  if (chara.wallpaper) {
+    storyScreen.style.setProperty('--wallpaper-url', `url("${chara.wallpaper}")`);
+  } else {
+    storyScreen.style.removeProperty('--wallpaper-url');
+  }
+
+  const history = getStoryHistory(currentCharaId);
+  if (history.length === 0 && scene) {
+    // 冒頭シーンをAIに書かせる
+    showScreen('story');
+    generateStoryOpening(chara, currentWorldSetting);
+  } else {
+    showScreen('story');
+    renderStoryContent();
+  }
+}
+
+async function generateStoryOpening(chara, world) {
+  const container = document.getElementById('story-content');
+  container.innerHTML = `<div class="story-loading"><span class="story-loading-dots">物語を紡いでいます</span></div>`;
+
+  const prompt = buildStoryOpeningPrompt(chara, world);
+  try {
+    const text = await callClaudeAPI([{ role: 'user', content: prompt }], 'story');
+    const history = [];
+    history.push({ type: 'opening', text });
+    saveStoryHistory(currentCharaId, history);
+    renderStoryContent();
+  } catch(e) {
+    container.innerHTML = `<div class="story-loading">（エラーが発生しました。世界観を設定して再度お試しください）</div>`;
+  }
+}
+
+function renderStoryContent() {
+  const history = getStoryHistory(currentCharaId);
+  const container = document.getElementById('story-content');
+  container.innerHTML = history.map(h => {
+    if (h.type === 'opening' || h.type === 'chara') {
+      return `<div class="story-block"><div class="story-chara-text">${formatStoryText(h.text)}</div></div>`;
+    } else if (h.type === 'user') {
+      return `<div class="story-block"><div class="story-user-line">「${escHtml(h.text)}」</div></div>`;
+    }
+    return '';
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatStoryText(text) {
+  // 「」内のセリフを色付け
+  let formatted = escHtml(text).replace(/\n/g, '<br>');
+  formatted = formatted.replace(/「([^」]*)」/g, '<span class="dialogue">「$1」</span>');
+  // （）内の心理描写をイタリック
+  formatted = formatted.replace(/（([^）]*)）/g, '<span class="internal">（$1）</span>');
+  return formatted;
+}
+
+let isStoryLoading = false;
+
+async function sendStoryMessage() {
+  if (isStoryLoading) return;
+  const input = document.getElementById('story-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+
+  const history = getStoryHistory(currentCharaId);
+  history.push({ type: 'user', text });
+  saveStoryHistory(currentCharaId, history);
+
+  const userBlock = document.createElement('div');
+  userBlock.className = 'story-block';
+  userBlock.innerHTML = `<div class="story-user-line">「${escHtml(text)}」</div>`;
+  const container = document.getElementById('story-content');
+  container.appendChild(userBlock);
+
+  const loadingBlock = document.createElement('div');
+  loadingBlock.className = 'story-block';
+  loadingBlock.innerHTML = `<div class="story-loading"><span class="story-loading-dots">続きを綴っています</span></div>`;
+  container.appendChild(loadingBlock);
+  container.scrollTop = container.scrollHeight;
+
+  isStoryLoading = true;
+  document.getElementById('story-send-btn').disabled = true;
+
+  const chara = charas.find(c => c.id === currentCharaId);
+  const prompt = buildStoryPrompt(chara, currentWorldSetting, history);
+
+  try {
+    const reply = await callClaudeAPI([{ role: 'user', content: prompt }], 'story');
+    container.removeChild(loadingBlock);
+
+    const charaBlock = document.createElement('div');
+    charaBlock.className = 'story-block';
+    charaBlock.innerHTML = `<div class="story-chara-text">${formatStoryText(reply)}</div>`;
+    container.appendChild(charaBlock);
+    container.scrollTop = container.scrollHeight;
+
+    history.push({ type: 'chara', text: reply });
+    saveStoryHistory(currentCharaId, history);
+  } catch(e) {
+    container.removeChild(loadingBlock);
+    const errBlock = document.createElement('div');
+    errBlock.className = 'story-loading';
+    errBlock.textContent = '（エラーが発生しました）';
+    container.appendChild(errBlock);
+  }
+
+  isStoryLoading = false;
+  document.getElementById('story-send-btn').disabled = false;
+}
+
+function buildStoryOpeningPrompt(chara, world) {
+  return `あなたは日本語の小説を書くアシスタントです。以下の設定で物語の冒頭シーンを書いてください。
+
+【キャラクター設定】
+名前：${chara.name}
+一人称：${chara.pronoun || '私'}
+口調・話し方：${chara.tone || '自然'}
+性格：${chara.personality || ''}
+${chara.background ? `背景：${chara.background}` : ''}
+
+【世界観・舞台】
+${world.setting ? `設定：${world.setting}` : ''}
+${world.relation ? `関係性：${world.relation}` : ''}
+ジャンル：${world.genre}
+${world.scene ? `冒頭シーン：${world.scene}` : ''}
+
+【書き方のルール】
+- 三人称または「ゆき」視点の一人称で書く
+- 400〜600字程度
+- 「」内のセリフ、（）内の心理描写も含める
+- ${chara.name}のセリフはキャラの口調を忠実に再現する
+- 情景描写を豊かに、小説らしい文体で
+- 続きが気になるような終わり方にする`;
+}
+
+function buildStoryPrompt(chara, world, history) {
+  const recentHistory = history.slice(-10);
+  const historyText = recentHistory.map(h => {
+    if (h.type === 'user') return `【ゆきの台詞・行動】${h.text}`;
+    if (h.type === 'chara' || h.type === 'opening') return `【物語の続き】\n${h.text}`;
+    return '';
+  }).join('\n\n');
+
+  return `あなたは日本語の小説を書くアシスタントです。以下の続きを書いてください。
+
+【キャラクター設定】
+名前：${chara.name}
+一人称：${chara.pronoun || '私'}
+口調：${chara.tone || '自然'}
+性格：${chara.personality || ''}
+${chara.background ? `背景：${chara.background}` : ''}
+
+【世界観】
+${world ? `${world.setting || ''} ジャンル：${world.genre || '日常'} 関係性：${world.relation || ''}` : '現代日常'}
+
+【これまでの流れ】
+${historyText}
+
+【書き方のルール】
+- 上記の流れを自然に引き継いで続きを書く
+- 400〜700字程度
+- 「」内のセリフ、（）内の心理描写を含める
+- ${chara.name}のセリフはキャラの口調を忠実に再現
+- 情景描写と心理描写を丁寧に
+- 読み終えた後に「次はどうなるんだろう」と思わせる終わり方`;
+}
+
+function handleStoryKey(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    sendStoryMessage();
+  }
+}
+
+function clearStoryHistory() {
+  if (!confirm('ストーリーをリセットしますか？')) return;
+  saveStoryHistory(currentCharaId, []);
+  renderStoryContent();
+}
+
+// ===== APIキー管理 =====
+const APIKEY_STORAGE = 'chara_chat_apikey';
+
+function loadApiKey() {
+  return localStorage.getItem(APIKEY_STORAGE) || '';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apikey-input').value.trim();
+  if (!key || !key.startsWith('sk-')) {
+    showToast('正しいAPIキーを入力してください（sk- で始まるもの）');
+    return;
+  }
+  localStorage.setItem(APIKEY_STORAGE, key);
+  updateApiBanner();
+  showToast('✓ APIキーを保存しました');
+}
+
+function updateApiBanner() {
+  const key = loadApiKey();
+  const banner = document.getElementById('apikey-banner');
+  if (!banner) return;
+  if (key) {
+    banner.innerHTML = `
+      <div class="apikey-banner-title">🔑 APIキー設定済み</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+        <div class="apikey-set-indicator">✓ キーが保存されています（sk-...${key.slice(-4)}）</div>
+        <button class="btn btn-ghost" style="font-size:12px;padding:6px 10px;" onclick="clearApiKey()">変更</button>
+      </div>`;
+  }
+}
+
+function clearApiKey() {
+  localStorage.removeItem(APIKEY_STORAGE);
+  document.getElementById('apikey-banner').innerHTML = `
+    <div class="apikey-banner-title">🔑 APIキーを設定してください</div>
+    <p>チャットとストーリー機能を使うには、Anthropic APIキーが必要です。<br>キーは<b>このブラウザにのみ保存</b>され、外部に送信されません。</p>
+    <div class="apikey-input-row">
+      <input type="password" class="form-input" id="apikey-input" placeholder="sk-ant-..." autocomplete="off">
+      <button class="btn btn-primary" onclick="saveApiKey()">保存</button>
+    </div>
+    <p>APIキーは <a href="https://console.anthropic.com/keys" target="_blank" style="color:var(--accent)">console.anthropic.com</a> で取得できます。</p>`;
+}
+
+// ===== Claude API =====
+async function callClaudeAPI(messages, mode) {
+  const apiKey = loadApiKey();
+  if (!apiKey) {
+    showToast('APIキーが設定されていません');
+    throw new Error('No API key');
+  }
+
+  const maxTokens = mode === 'story' ? 900 : 300;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: maxTokens,
+      messages: messages,
+    })
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    const msg = err.error?.message || 'APIエラー';
+    showToast('エラー: ' + msg);
+    throw new Error(msg);
+  }
+  const data = await response.json();
+  return data.content.map(c => c.text || '').join('');
+}
+
+// ===== ユーティリティ =====
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function showToast(msg, duration = 2000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), duration);
+}
+
+// ===== 初期化 =====
+loadData();
+renderCharaList();
+updateApiBanner();
+</script>
+</body>
+</html>
